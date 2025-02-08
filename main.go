@@ -2,32 +2,63 @@ package main
 
 import (
 	"fmt"
-	"io"
+	"log"
 	"net/http"
+	"os"
+	"time"
+
+	"github.com/ismae1-alvarez/rest-api-go/internal/user"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	port := ":8080"
 
-	http.HandleFunc("/users", getUsers)
-	http.HandleFunc("/courses", getCourses)
+	router := mux.NewRouter()
 
-	err := http.ListenAndServe(port, nil)
+	_ = godotenv.Load()
 
-	if err != nil {
-		fmt.Println(err)
+	// definir mi log
+	l := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		os.Getenv("DATABASE_USER"),
+		os.Getenv("DATABASE_PASSWORD"),
+		os.Getenv("DATABASE_HOST"),
+		os.Getenv("DATABASE_PORT"),
+		os.Getenv("DATABASE_NAME"),
+	)
+
+	db, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
+	db = db.Debug()
+
+	_ = db.AutoMigrate(&user.User{})
+
+	userRepo := user.NewRepo(l, db)
+
+	userSrv := user.NewService(l, userRepo)
+	userEnd := user.MakeEndPoints(userSrv)
+
+	router.HandleFunc("/users", userEnd.Create).Methods("POST")
+	router.HandleFunc("/users", userEnd.Get).Methods("GET")
+	router.HandleFunc("/users", userEnd.GetAll).Methods("GET")
+	router.HandleFunc("/users", userEnd.Update).Methods("PATCH")
+	router.HandleFunc("/users", userEnd.Delete).Methods("DELETE")
+
+	srv := &http.Server{
+		Handler:      router,
+		Addr:         "127.0.0.1:8080",
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
 	}
 
-}
+	err := srv.ListenAndServe()
 
-func getUsers(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("/Users \n")
-
-	io.WriteString(w, "Corrio bien tu endpoint")
-}
-
-func getCourses(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("/courses \n")
-
-	io.WriteString(w, "Corrio bien tu endpoint")
+	if err != nil {
+		log.Fatal(srv.ListenAndServe())
+	}
 }
