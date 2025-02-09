@@ -13,6 +13,7 @@ type Respository interface {
 	GetAll() ([]User, error)
 	Get(id string) (*User, error)
 	Delete(id string) error
+	Update(id string, firstName *string, lastName *string, email *string, phone *string) error
 }
 
 type repo struct {
@@ -43,22 +44,18 @@ func (repo *repo) Create(user *User) error {
 func (repo *repo) GetAll() ([]User, error) {
 	var u []User
 
-	result := repo.db.Model(&u).Order("created_at desc").Find(&u)
-
-	if result.Error != nil {
-		return nil, result.Error
+	if err := repo.db.Model(&u).Order("created_at desc").Find(&u).Error; err != nil {
+		return nil, err
 	}
 
 	return u, nil
-
 }
+
 func (repo *repo) Get(id string) (*User, error) {
 	user := User{ID: id}
 
-	result := repo.db.First(&user)
-
-	if result.Error != nil {
-		return nil, result.Error
+	if err := repo.db.First(&user).Error; err != nil {
+		return nil, err
 	}
 
 	return &user, nil
@@ -77,6 +74,33 @@ func (r *repo) Delete(id string) error {
 	// El otro no me funcionaba
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	return nil
+}
+
+func (r *repo) Update(id string, firstName *string, lastName *string, email *string, phone *string) error {
+
+	values := make(map[string]interface{})
+
+	if firstName != nil {
+		values["first_name"] = *firstName
+	}
+
+	if lastName != nil {
+		values["last_name"] = *lastName
+	}
+
+	if email != nil {
+		values["email"] = *email
+	}
+
+	if phone != nil {
+		values["phone"] = *phone
+	}
+
+	if err := r.db.Model(&User{}).Where("id = ?", id).Updates(values).Error; err != nil {
+		return err
 	}
 
 	return nil

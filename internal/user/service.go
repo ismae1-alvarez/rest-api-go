@@ -9,6 +9,7 @@ type Service interface {
 	Get(id string) (*User, error)
 	GetAll() ([]User, error)
 	Delete(id string) error
+	Update(id string, firstName *string, lastName *string, email *string, phone *string) error
 }
 
 type service struct {
@@ -64,4 +65,9 @@ func (s service) Get(id string) (*User, error) {
 
 func (s service) Delete(id string) error {
 	return s.repo.Delete(id)
+}
+
+func (s *service) Update(id string, firstName *string, lastName *string, email *string, phone *string) error {
+
+	return s.repo.Update(id, firstName, lastName, email, phone)
 }
