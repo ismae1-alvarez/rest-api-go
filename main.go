@@ -1,16 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/ismae1-alvarez/rest-api-go/internal/user"
+	"github.com/ismae1-alvarez/rest-api-go/pkg/bootstrap"
 	"github.com/joho/godotenv"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 
 	"github.com/gorilla/mux"
 )
@@ -22,21 +19,13 @@ func main() {
 	_ = godotenv.Load()
 
 	// definir mi log
-	l := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+	l := bootstrap.InitLogger()
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		os.Getenv("DATABASE_USER"),
-		os.Getenv("DATABASE_PASSWORD"),
-		os.Getenv("DATABASE_HOST"),
-		os.Getenv("DATABASE_PORT"),
-		os.Getenv("DATABASE_NAME"),
-	)
+	db, err := bootstrap.DBConnection()
 
-	db, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-
-	db = db.Debug()
-
-	_ = db.AutoMigrate(&user.User{})
+	if err != nil {
+		l.Fatal(err)
+	}
 
 	userRepo := user.NewRepo(l, db)
 
@@ -56,9 +45,5 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 	}
 
-	err := srv.ListenAndServe()
-
-	if err != nil {
-		log.Fatal(srv.ListenAndServe())
-	}
+	log.Fatal(srv.ListenAndServe())
 }
