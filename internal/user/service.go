@@ -16,6 +16,7 @@ type (
 		GetAll(filters Filters) ([]User, error)
 		Delete(id string) error
 		Update(id string, firstName *string, lastName *string, email *string, phone *string) error
+		Count(filters Filters) (int, error)
 	}
 
 	service struct {
@@ -77,4 +78,8 @@ func (s service) Delete(id string) error {
 func (s *service) Update(id string, firstName *string, lastName *string, email *string, phone *string) error {
 
 	return s.repo.Update(id, firstName, lastName, email, phone)
+}
+
+func (s service) Count(filters Filters) (int, error) {
+	return s.repo.Count(filters)
 }

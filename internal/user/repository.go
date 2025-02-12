@@ -15,6 +15,7 @@ type Respository interface {
 	Get(id string) (*User, error)
 	Delete(id string) error
 	Update(id string, firstName *string, lastName *string, email *string, phone *string) error
+	Count(filters Filters) (int, error)
 }
 
 type repo struct {
@@ -113,6 +114,19 @@ func (r *repo) Update(id string, firstName *string, lastName *string, email *str
 	}
 
 	return nil
+}
+
+func (r *repo) Count(filters Filters) (int, error) {
+	var count int64
+
+	tx := r.db.Model(User{})
+	tx = applyFilters(tx, filters)
+
+	if err := tx.Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }
 
 func applyFilters(tx *gorm.DB, filters Filters) *gorm.DB {
