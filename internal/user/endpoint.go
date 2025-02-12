@@ -90,7 +90,14 @@ func makeCreateEndPoint(s Service) Controller {
 func makeGetAllEndPoint(s Service) Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		users, err := s.GetAll()
+		v := r.URL.Query()
+
+		filters := Filters{
+			FirstName: v.Get("first_name"),
+			LastName:  v.Get("last_name"),
+		}
+
+		users, err := s.GetAll(filters)
 
 		if err != nil {
 			w.WriteHeader(400)
