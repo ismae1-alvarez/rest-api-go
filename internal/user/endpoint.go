@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/ismae1-alvarez/rest-api-go/pkg/meta"
 )
 
 type (
@@ -37,6 +38,7 @@ type (
 		Status int         `json:"status"`
 		Data   interface{} `json:"data,omitempty"`
 		Err    string      `json:"error,omitempty"`
+		Meta   *meta.Meta  `json:"meta,omitempty"`
 	}
 )
 
@@ -97,17 +99,33 @@ func makeGetAllEndPoint(s Service) Controller {
 			LastName:  v.Get("last_name"),
 		}
 
+		count, err := s.Count(filters)
+
+		if err != nil {
+			w.WriteHeader(500)
+			json.NewEncoder(w).Encode(&Response{Status: 400, Err: err.Error()})
+			return
+		}
+
+		meta, err := meta.New(count)
+
+		if err != nil {
+			w.WriteHeader(500)
+			json.NewEncoder(w).Encode(&Response{Status: 500, Err: err.Error()})
+			return
+		}
+
 		users, err := s.GetAll(filters)
 
 		if err != nil {
-			w.WriteHeader(400)
+			w.WriteHeader(500)
 			json.NewEncoder(w).Encode(&Response{Status: 400, Err: err.Error()})
 			return
 		}
 
 		fmt.Println(users)
 
-		json.NewEncoder(w).Encode(&Response{Status: 200, Data: users})
+		json.NewEncoder(w).Encode(&Response{Status: 200, Data: users, Meta: meta})
 	}
 }
 func makeGetEndPoint(s Service) Controller {
