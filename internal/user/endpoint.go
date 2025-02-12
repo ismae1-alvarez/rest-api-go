@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/ismae1-alvarez/rest-api-go/pkg/meta"
@@ -99,6 +100,9 @@ func makeGetAllEndPoint(s Service) Controller {
 			LastName:  v.Get("last_name"),
 		}
 
+		limit, _ := strconv.Atoi(v.Get("limit"))
+		page, _ := strconv.Atoi(v.Get("page"))
+
 		count, err := s.Count(filters)
 
 		if err != nil {
@@ -107,7 +111,7 @@ func makeGetAllEndPoint(s Service) Controller {
 			return
 		}
 
-		meta, err := meta.New(count)
+		meta, err := meta.New(page, limit, count)
 
 		if err != nil {
 			w.WriteHeader(500)
@@ -115,7 +119,7 @@ func makeGetAllEndPoint(s Service) Controller {
 			return
 		}
 
-		users, err := s.GetAll(filters)
+		users, err := s.GetAll(filters, meta.Offset(), meta.Limit())
 
 		if err != nil {
 			w.WriteHeader(500)

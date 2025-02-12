@@ -11,7 +11,7 @@ import (
 
 type Respository interface {
 	Create(user *User) error
-	GetAll(filters Filters) ([]User, error)
+	GetAll(filters Filters, offset, limit int) ([]User, error)
 	Get(id string) (*User, error)
 	Delete(id string) error
 	Update(id string, firstName *string, lastName *string, email *string, phone *string) error
@@ -43,15 +43,12 @@ func (repo *repo) Create(user *User) error {
 	return nil
 }
 
-func (repo *repo) GetAll(filters Filters) ([]User, error) {
+func (repo *repo) GetAll(filters Filters, offset, limit int) ([]User, error) {
 	var u []User
-
-	// if err := repo.db.Model(&u).Order("created_at desc").Find(&u).Error; err != nil {
-	// 	return nil, err
-	// }
 
 	tx := repo.db.Model(&u)
 	tx = applyFilters(tx, filters)
+	tx = tx.Limit(limit).Offset(offset)
 	result := tx.Order("created_at desc").Find(&u)
 
 	if result.Error != nil {
